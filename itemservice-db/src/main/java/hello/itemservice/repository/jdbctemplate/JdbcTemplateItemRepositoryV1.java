@@ -56,7 +56,7 @@ public class JdbcTemplateItemRepositoryV1 implements ItemRepository {
     public Optional<Item> findById(Long id) {
         String sql = "select id, item_name, price, quantity from item where id=?";
         try{
-            Item item = template.queryForObject(sql, itemRowMapperr(), id);
+            Item item = template.queryForObject(sql, itemRowMapper(), id);
             return Optional.of(item);
         }catch (EmptyResultDataAccessException e){
             return Optional.empty();
@@ -89,10 +89,10 @@ public class JdbcTemplateItemRepositoryV1 implements ItemRepository {
         }
 
         log.info("sql {}", sql);
-        return template.query(sql, itemRowMapperr(), param.toArray());
+        return template.query(sql, itemRowMapper(), param.toArray());
     }
 
-    private RowMapper<Item> itemRowMapperr(){
+    private RowMapper<Item> itemRowMapper(){
         return (rs, rowNum) -> {
             Item item = new Item();
             item.setId(rs.getLong("id"));
