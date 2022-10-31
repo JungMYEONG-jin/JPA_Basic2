@@ -5,6 +5,7 @@ import hello.itemservice.repository.ItemRepository;
 import hello.itemservice.repository.ItemSearchCond;
 import hello.itemservice.repository.ItemUpdateDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,12 +13,14 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class MybatisItemRepository implements ItemRepository {
 
     private final ItemMapper itemMapper; // DI
 
     @Override
     public Item save(Item item) {
+        log.info("mybatis class {}", itemMapper.getClass());
         itemMapper.save(item);
         return item;
     }
