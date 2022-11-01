@@ -2,11 +2,20 @@ package hello.itemservice.domain;
 
 import lombok.Data;
 
+import javax.persistence.*;
+
+/**
+ * entity가 붙어야 JPA가 인식 가능
+ */
 @Data
+@Entity
 public class Item {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "item_name", length = 10)
     private String itemName;
     private Integer price;
     private Integer quantity;
