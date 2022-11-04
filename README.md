@@ -5,3 +5,5 @@ JPA basic 2편
 jenkins 동작 확인!!
 
 Is done? not yet
+
+test22
