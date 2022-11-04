@@ -4,6 +4,4 @@ JPA basic 2편
 # jenkins test
 jenkins 동작 확인!!
 
-Is done? not yet
-
-test22
+jenkins 테스트 성공 
