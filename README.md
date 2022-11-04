@@ -2,4 +2,4 @@
 JPA basic 2편 
 
 # jenkins test
-jenkins 동작 확인
+jenkins 동작 확인!!
