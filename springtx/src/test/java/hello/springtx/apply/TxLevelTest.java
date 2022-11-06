@@ -38,7 +38,6 @@ public class TxLevelTest {
         public void write(){
             log.info("call write");
             printTxInfo();
-
         }
 //webhook test aa
         public void read(){
