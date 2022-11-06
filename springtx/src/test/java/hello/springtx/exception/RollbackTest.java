@@ -9,6 +9,13 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.annotation.Transactional;
 
+
+/**
+ * runtime 복구가 안됨 즉 rollback 해야함
+ * check 복구 가능 commit
+ * 비즈니스 상황에서 발생한 에러는 check로 하고 복구 하는 방향으로 하면 될듯?
+ */
+
 @SpringBootTest
 public class RollbackTest {
 
