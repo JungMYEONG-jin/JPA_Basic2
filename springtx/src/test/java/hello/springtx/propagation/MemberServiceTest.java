@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Slf4j
@@ -32,6 +32,19 @@ class MemberServiceTest {
 
         Assertions.assertTrue(memberRepository.find(username).isPresent());
         Assertions.assertTrue(logRepository.find(username).isPresent());
+    }
+    /**
+     * memberService @Transactional off
+     * memberRepository @Transactional on
+     * logRepository @Transactional on
+     */
+    @Test
+    void outerTxOffFail() {
+        String username = "로그예외_outerTxOff_success";
+        assertThatThrownBy(()->memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
+
+        Assertions.assertTrue(memberRepository.find(username).isPresent());
+        Assertions.assertTrue(logRepository.find(username).isEmpty());
     }
 
     @Test
