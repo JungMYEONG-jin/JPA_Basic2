@@ -136,8 +136,6 @@ public class BasicTxTest {
         log.info("내부 트랜잭션 콜백");
         txManager.rollback(inner);
 
-
-
     }
 
 
