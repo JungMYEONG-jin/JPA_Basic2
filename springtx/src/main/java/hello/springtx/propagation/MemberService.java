@@ -23,13 +23,7 @@ public class MemberService {
         log.info("memberRepository call end");
 
         log.info("logRepository call start");
-        try{
-            logRepository.save(logMessage);
-        }catch (RuntimeException e){
-            log.info("log 저장에 실패했습니다, message={}", logMessage.getMessage());
-            log.info("정상 흐름 반환");
-        }
-
+        logRepository.save(logMessage);
         log.info("logRepository call end");
     }
 
