@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.member.domain.Member;
+import study.querydsl.member.domain.QMember;
 import study.querydsl.team.domain.Team;
 
 import javax.persistence.EntityManager;
@@ -15,6 +17,7 @@ import javax.persistence.EntityManager;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static study.querydsl.member.domain.QMember.member;
 
 @SpringBootTest
@@ -63,5 +66,23 @@ public class QuerydslBasicTest {
             System.out.println("member1 = " + member1);
         }
         assertThat(memberJPAQuery.size()).isEqualTo(2);
+    }
+
+    @Test
+    void searchAndParam() {
+        List<Member> memberJPAQuery = queryFactory.selectFrom(member)
+                .where(member.age.goe(30).and(member.username.startsWith("mem"))).fetch();
+        for (Member member1 : memberJPAQuery) {
+            System.out.println("member1 = " + member1);
+        }
+        assertThat(memberJPAQuery.size()).isEqualTo(2);
+    }
+
+    @Test
+    void resultFetchTest() {
+        List<Member> fetch = queryFactory.selectFrom(member).fetch();
+        assertThat(fetch.size()).isEqualTo(4);
+        Member findMember = queryFactory.selectFrom(QMember.member).fetchFirst();
+        assertThatThrownBy(()->queryFactory.selectFrom(member).fetchOne()).isInstanceOf(NonUniqueResultException.class);
     }
 }
