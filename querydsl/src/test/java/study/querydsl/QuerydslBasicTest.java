@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,8 @@ import study.querydsl.member.domain.Member;
 import study.querydsl.team.domain.Team;
 
 import javax.persistence.EntityManager;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static study.querydsl.member.domain.QMember.member;
@@ -50,5 +53,15 @@ public class QuerydslBasicTest {
     void startQuerydsl() {
         Member findMember = queryFactory.selectFrom(member).where(member.username.eq("mem1")).fetchOne();
         assertThat(findMember.getUsername()).isEqualTo("mem1");
+    }
+
+    @Test
+    void search() {
+        List<Member> memberJPAQuery = queryFactory.selectFrom(member)
+                .where(member.age.goe(30)).fetch();
+        for (Member member1 : memberJPAQuery) {
+            System.out.println("member1 = " + member1);
+        }
+        assertThat(memberJPAQuery.size()).isEqualTo(2);
     }
 }
