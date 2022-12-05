@@ -41,9 +41,9 @@ public class QuerydslBasicTest {
         em.persist(b);
 
         Member mem1 = new Member("mem1", 10, a);
-        Member mem2 = new Member("mem20", 20, a);
-        Member mem3 = new Member("mem30", 30, b);
-        Member mem4 = new Member("mem40", 40, b);
+        Member mem2 = new Member("mem2", 20, a);
+        Member mem3 = new Member("mem3", 30, b);
+        Member mem4 = new Member("mem4", 40, b);
         em.persist(mem1);
         em.persist(mem2);
         em.persist(mem3);
@@ -158,5 +158,64 @@ public class QuerydslBasicTest {
         assertThat(teamA.get(member.age.avg())).isEqualTo(15);
         assertThat(teamB.get(team.name)).isEqualTo("B");
         assertThat(teamB.get(member.age.avg())).isEqualTo(35);
+    }
+
+    @Test
+    void join() {
+        List<Member> members = queryFactory.selectFrom(member)
+                .join(member.team, team)
+                .where(team.name.eq("A"))
+                .fetch();
+        assertThat(members.size()).isEqualTo(2);
+        assertThat(members).extracting("username")
+                .containsExactly("mem1", "mem2");
+    }
+
+
+    /**
+     * 회원 이름과 팀 이름 같은 회원
+     */
+    @Test
+    void thetaJoin() {
+        em.persist((new Member("A", 222)));
+        em.persist((new Member("B", 222)));
+        em.persist((new Member("C", 222)));
+
+        List<Member> members = queryFactory.select(member)
+                .from(member, team)
+                .where(member.username.eq(team.name))
+                .fetch();
+        assertThat(members).extracting("username")
+                .containsExactly("A", "B");
+    }
+
+    @Test
+    void joinOnFiltering() {
+        List<Tuple> list = queryFactory.select(member, team)
+                .from(member)
+                .leftJoin(member.team, team)
+                .on(team.name.eq("A"))
+                .fetch();
+        Tuple tuple = list.get(0);
+        for (Tuple tuple1 : list) {
+            System.out.println("tuple1 = " + tuple1);
+        }
+    }
+
+    @Test
+    void joinOnNoRelation() {
+        em.persist((new Member("A", 222)));
+        em.persist((new Member("B", 222)));
+        em.persist((new Member("C", 222)));
+
+        List<Tuple> fetch = queryFactory.select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name))
+                .fetch();
+
+        for (Tuple tuple : fetch) {
+            System.out.println("tuple = " + tuple);
+        }
+
     }
 }
