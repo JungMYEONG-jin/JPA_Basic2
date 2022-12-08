@@ -1,8 +1,15 @@
 package study.querydsl;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.NonUniqueResultException;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -10,7 +17,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
+import study.querydsl.dto.MemberDto;
+import study.querydsl.dto.QMemberDto;
+import study.querydsl.dto.UserDto;
 import study.querydsl.member.domain.Member;
 import study.querydsl.member.domain.QMember;
 import study.querydsl.team.domain.QTeam;
@@ -23,6 +35,7 @@ import javax.persistence.PersistenceUnit;
 
 import java.util.List;
 
+import static com.querydsl.core.types.dsl.Expressions.stringTemplate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static study.querydsl.member.domain.QMember.member;
@@ -307,6 +320,301 @@ public class QuerydslBasicTest {
                 .fetch();
         for (Tuple tuple : fetch) {
             System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    void basicCase() {
+        List<String> fetch = queryFactory.select(member.age.when(10).then("ten years old")
+                        .when(20).then("20th")
+                        .otherwise("adult"))
+                .from(member)
+                .fetch();
+        for (String s : fetch) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void complexCase() {
+        List<String> result = queryFactory.select(new CaseBuilder().when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21~30살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+        for (String s : result) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void constant() {
+        List<Tuple> a = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+        for (Tuple tuple : a) {
+            System.out.println("tuple = " + tuple);
+        }
+    }
+
+    @Test
+    void concat() {
+        // user_age
+        List<String> fetch = queryFactory.select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .fetch();
+        for (String s : fetch) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void projectionOne() {
+        List<Integer> fetch = queryFactory.select(member.age)
+                .from(member)
+                .fetch();
+        for (Integer integer : fetch) {
+            System.out.println("integer = " + integer);
+        }
+    }
+
+    @Test
+    void projectionTwo() {
+        List<Tuple> fetch = queryFactory.select(member.age, member.username)
+                .from(member)
+                .fetch();
+        for (Tuple tuple : fetch) {
+            System.out.println("tuple = " + tuple);
+            System.out.println(" age = " + tuple.get(member.age));
+            System.out.println(" name = " + tuple.get(member.username));
+        }
+    }
+
+    /**
+     * new 연산자 통해 Dto 결과 가져오기
+     * 순수 JPA에서 조회는 new 연산이 필요
+     * 지저분함
+     * 생성자 방식만 지원함
+     */
+    @Test
+    void findDtoByJPQL() {
+        List<MemberDto> resultList = em.createQuery("select new study.querydsl.dto.MemberDto(m.username, m.age) from Member m", MemberDto.class).getResultList();
+        for (MemberDto memberDto : resultList) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    /**
+     * Querydsl
+     * setter
+     */
+    @Test
+    void setterDto(){
+        List<MemberDto> fetch = queryFactory.select(Projections.bean(MemberDto.class, member.username, member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : fetch) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    /**
+     * Querydsl
+     * field
+     */
+    @Test
+    void dtoByField(){
+        List<MemberDto> fetch = queryFactory.select(Projections.fields(MemberDto.class, member.username, member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : fetch) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    /**
+     * Querydsl
+     * constructor
+     */
+    @Test
+    void dtoByConstructor(){
+        List<MemberDto> fetch = queryFactory.select(Projections.constructor(MemberDto.class, member.username, member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : fetch) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+
+    /**
+     * Querydsl
+     * field
+     */
+    @Test
+    void dtoByFieldNotMatchedName(){
+        // 원래는 칼럼이 다르므로 나이만 값이 제대로 들어가고 이름은 null로 들어감
+        QMember qMember = new QMember("qMember");
+        List<UserDto> fetch = queryFactory.select(Projections.fields(UserDto.class, member.username.as("name"),
+                        ExpressionUtils.as(JPAExpressions.
+                                select(qMember.age.max())
+                                .from(qMember), "age")))
+                .from(member)
+                .fetch();
+        for (UserDto memberDto : fetch) {
+            System.out.println("UserDto = " + memberDto);
+        }
+    }
+    /**
+     * Querydsl
+     * field
+     */
+    @Test
+    void dtoByConstructorNotMatchedName(){
+        // 원래는 칼럼이 다르므로 나이만 값이 제대로 들어가고 이름은 null로 들어감
+        QMember qMember = new QMember("qMember");
+        List<UserDto> fetch = queryFactory.select(Projections.constructor(UserDto.class,
+                        member.username,
+                        member.age))
+                .from(member)
+                .fetch();
+        for (UserDto memberDto : fetch) {
+            System.out.println("UserDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void findDtoByQueryProjection() {
+        List<MemberDto> fetch = queryFactory.select(new QMemberDto(member.username, member.age))
+                .from(member)
+                .fetch();
+        for (MemberDto memberDto : fetch) {
+            System.out.println("memberDto = " + memberDto);
+        }
+    }
+
+    @Test
+    void dynamicQuery_BooleanBuilder(){
+        String usernameParam = "mem1";
+        Integer ageParam = null;
+        List<Member> result = searchMember1(usernameParam, ageParam);
+        for (Member member1 : result) {
+            System.out.println("mem1 = " + member1);
+        }
+    }
+
+    private List<Member> searchMember1(String usernameParam, Integer ageParam) {
+        BooleanBuilder booleanBuilder = new BooleanBuilder();
+        if (usernameParam!=null)
+            booleanBuilder.and(member.username.eq(usernameParam));
+        if(ageParam!=null)
+            booleanBuilder.and(member.age.eq(ageParam));
+
+        return queryFactory.selectFrom(member)
+                .where(booleanBuilder)
+                .fetch();
+    }
+
+    @Test
+    void dynamicQuery_WhereExpression(){
+        String usernameParam = "mem1";
+        Integer ageParam = 10;
+        List<Member> fetch = searchMember2(usernameParam, ageParam);
+        for (Member fetch1 : fetch) {
+            System.out.println("fetch1 = " + fetch1);
+        }
+    }
+
+    private List<Member> searchMember2(String usernameParam, Integer ageParam) {
+        return queryFactory.selectFrom(member)
+                .where(allEq(usernameParam, ageParam))
+                .fetch();
+    }
+
+    private BooleanExpression usernameEq(String usernameParam) {
+        //null 처리
+        return usernameParam!=null?member.username.eq(usernameParam):null;
+    }
+
+    private BooleanExpression ageEq(Integer ageParam) {
+        return ageParam!=null?member.age.eq(ageParam):null;
+    }
+
+    private BooleanExpression allEq(String username, Integer age){
+        return usernameEq(username).and(ageEq(age));
+    }
+
+    /**
+     * bulk 연산
+     */
+    @Test
+    void bulkUpdate() {
+
+        // 벌크 연산 조심해야됨
+        // 영속성 컨텍스트에는 아직 이전 네임으로 된 상태다
+
+        // 영속성 1, 2, 3, 4
+        // db 1, 2, 3, 4
+
+        long cnt = queryFactory.update(member)
+                .set(member.username, "비호")
+                .where(member.age.lt(21))
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        // 영속성 1, 2, 3, 4
+        // db 비, 비, 3, 4
+        // 현재 상태가 안맞는다
+        // DB에서 가져온걸 영속성 컨텍스트에 넣어야함.
+        // but 영속성 컨텍스트에 있으므로 db에 있는걸 버리고 영속성 씀
+        // 그러면 이전 이름이 그대로 나옴 이를 해결하려면 영속성 초기화 해버리면된다.
+        // 벌크후 영속성컨텍스트 초기화 해주자~
+        List<Member> fetch = queryFactory.selectFrom(member).fetch();
+        for (Member fetch1 : fetch) {
+            System.out.println("fetch1 = " + fetch1);
+        }
+    }
+
+    @Test
+    void bulkAdd() {
+        long execute = queryFactory
+                .update(member)
+                .set(member.age, member.age.multiply(2))
+                .execute();
+    }
+
+    @Test
+    void bulkDelete() {
+        long execute = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    void sqlFunction() {
+        List<String> fetch = queryFactory
+                .select(stringTemplate("function('replace', {0}, {1}, {2})",
+                        member.username, "mem", "M"))
+                .from(member)
+                .fetch();
+        for (String s : fetch) {
+            System.out.println("s = " + s);
+        }
+    }
+
+    @Test
+    void sqlFunction2() {
+        // stringTemplate("function('lower', {0})", member.username))
+        List<String> fetch = queryFactory.select(member.username)
+                .from(member)
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+        for (String s : fetch) {
+            System.out.println("s = " + s);
         }
     }
 }
