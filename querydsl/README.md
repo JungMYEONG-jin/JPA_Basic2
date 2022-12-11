@@ -56,3 +56,5 @@ UserDto = UserDto(name=mem4, age=40)
 ```
 또는 ExpressionUtils.as(value, name) 해도 된다~.
 
+#### JPA와 Querydsl 합치기
+가장 기본이 되는 interface 이름에 querydsl 구현하는건 인터페이스이름+Impl 이렇게 생성하면됨.
